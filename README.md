@@ -1,64 +1,39 @@
-# 🎨 Plotting Utils
+# 🃏 Ace — 数据分析王牌 Skill
 
-常用科研绘图脚本集合，覆盖 R 和 Python 语言。
+> Antigravity / Gemini CLI 数据分析 Skill，一站式覆盖统计分析、问卷分析、论文格式、学术绘图。
 
-## 📋 脚本清单
+## 安装
 
-### R 脚本
+```bash
+# 方式一：直接克隆到 skills 目录
+git clone https://github.com/Ayanya-0628/ace.git ~/.antigravity/skills/ace
 
-| 脚本 | 用途 | 依赖 |
-|------|------|------|
-| [`polar_bar_chart.R`](scripts/R/polar_bar_chart.R) | 极坐标柱状图（环形柱状图） | circlize, readxl, grid, showtext |
-
-### Python 脚本
-
-_暂无，后续添加_
-
-## 🚀 使用方法
-
-1. 找到需要的脚本模板
-2. 复制到你的工作目录
-3. 修改数据路径、列名、颜色等参数
-4. 运行脚本生成图表
-
-## 📝 脚本说明
-
-### polar_bar_chart.R - 极坐标柱状图
-
-**功能**：使用 R 的 `circlize` 包绘制环形柱状图，适用于多品种/多分组的数据可视化。
-
-**特点**：
-- 支持多品种（variety）循环绘图
-- 每个扇区（sector）对应一个类别（category）
-- 柱形颜色按分组（group）区分
-- 支持显著性标注
-- PDF 导出，3×2 子图排版
-- Times New Roman 字体支持
-
-**输入数据格式**（Excel）：
-- `category` 列：类别名称
-- `variety` / `variety_id` 列：品种名称
-- `group` 列：分组名称（用于颜色区分）
-- `value` 列：数值
-- `significance` 列：显著性标注（如 `*`, `**`, `ns`）
-
-**依赖安装**：
-```r
-install.packages(bindindindindindc("circlize", "readxl", "showtext"))
+# 方式二：手动复制 SKILL.md
+cp SKILL.md ~/.antigravity/skills/ace/SKILL.md
 ```
 
-## 📂 目录结构
+## 功能模块
+
+| 模块 | 内容 |
+|------|------|
+| 📊 统计分析 | ANOVA、回归分析、前后测、LSD多重比较+字母标记 |
+| 📋 问卷分析 | Cronbach's α 信度、交叉分析、卡方检验、SERVQUAL |
+| 📝 论文格式 | 三线表 Word 输出、宋体/黑体/TNR 字体规范、python-docx 代码模板 |
+| 📈 学术绘图 | Okabe-Ito 色盲友好配色、200dpi 规范、中文字体配置 |
+
+## 触发关键词
+
+说出以下关键词自动触发：
+
+`数据分析` `方差分析` `ANOVA` `回归分析` `问卷分析` `信度检验` `交叉分析` `三线表` `论文格式` `学术绘图` `matplotlib` `SPSS` `Likert` `SERVQUAL`
+
+## 依赖
 
 ```
-plotting-utils/
-├── SKILL.md           # Antigravity Skill 配置文档
-├── README.md          # 本文件
-└── scripts/
-    ├── R/
-    │   └── polar_bar_chart.R
-    └── Python/
+pandas, numpy, scipy, statsmodels, openpyxl,
+python-docx, matplotlib, savReaderWriter (可选)
 ```
 
-## 🔄 更新日志
+## License
 
-- **2026-03-09**: 初始化仓库，添加极坐标柱状图 R 脚本
+MIT
