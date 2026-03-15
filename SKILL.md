@@ -316,23 +316,65 @@ def cronbachs_alpha(df):
 # α > 0.7 可接受，> 0.8 良好
 ```
 
-### 5.3 KMO & 因子分析
-
-```python
-from factor_analyzer import FactorAnalyzer
-from factor_analyzer.factor_analyzer import calculate_kmo, calculate_bartlett_sphericity
-
-# KMO 检验（>0.6 适合因子分析）
-kmo_all, kmo_model = calculate_kmo(df)
-
-# Bartlett 球形检验（p<0.05 适合）
-chi2, p = calculate_bartlett_sphericity(df)
-
-# 探索性因子分析
-fa = FactorAnalyzer(n_factors=3, rotation='varimax')
-fa.fit(df)
-loadings = pd.DataFrame(fa.loadings_, index=df.columns)
-variance = fa.get_factor_variance()  # 方差解释率
+### 5.3 KMO & 因子分析
+
+> ⚠️ **踩坑记录**：`factor_analyzer` 库与 sklearn ≥ 1.6 不兼容（`force_all_finite` → `ensure_all_finite`），
+> 导致 `FactorAnalyzer.fit()` 抛出 `TypeError`。以下为不依赖该库的手动实现。
+
+```python
+import numpy as np
+from numpy.linalg import inv, eig, det
+from scipy.stats import chi2 as chi2_dist
+
+# ── 手动 KMO ──
+def manual_kmo(data):
+    corr = data.corr().values
+    try:
+        corr_inv = inv(corr)
+    except:
+        corr_inv = np.linalg.pinv(corr)
+    n = corr.shape[0]
+    A = np.zeros((n, n))
+    for i in range(n):
+        for j in range(n):
+            A[i, j] = -corr_inv[i, j] / np.sqrt(corr_inv[i, i] * corr_inv[j, j])
+    sum_r2 = sum(corr[i, j]**2 for i in range(n) for j in range(n) if i != j)
+    sum_a2 = sum(A[i, j]**2 for i in range(n) for j in range(n) if i != j)
+    return sum_r2 / (sum_r2 + sum_a2)
+
+# ── 手动 Bartlett 球形检验 ──
+def manual_bartlett(data):
+    n, p = len(data), data.shape[1]
+    corr = data.corr().values
+    det_val = max(det(corr), 1e-300)
+    chi_sq = -(n - 1 - (2 * p + 5) / 6) * np.log(det_val)
+    df = p * (p - 1) / 2
+    p_val = 1 - chi2_dist.cdf(chi_sq, df)
+    return chi_sq, p_val
+
+# ── 手动 EFA + Varimax 旋转 ──
+def varimax_rotation(loadings, max_iter=100, tol=1e-6):
+    n, k = loadings.shape
+    R = np.eye(k)
+    d = 0
+    for _ in range(max_iter):
+        old_d = d
+        L = loadings @ R
+        u, s, vt = np.linalg.svd(
+            loadings.T @ (L**3 - (1.0/n) * L @ np.diag(np.diag(L.T @ L))))
+        R = u @ vt
+        d = np.sum(s)
+        if abs(d - old_d) < tol:
+            break
+    return loadings @ R
+
+# PCA 提取 + Varimax 旋转
+corr_matrix = np.corrcoef(data_standardized, rowvar=False)
+eigenvalues, eigenvectors = eig(corr_matrix)
+idx = np.argsort(eigenvalues)[::-1]
+eigenvalues, eigenvectors = eigenvalues[idx].real, eigenvectors[:, idx].real
+raw_loadings = eigenvectors[:, :n_factors] * np.sqrt(eigenvalues[:n_factors])
+rotated = varimax_rotation(raw_loadings)
 ```
 
 ### 5.4 ICC 组内相关系数
@@ -1402,3 +1444,90 @@ ax.add_artist(AnchoredOffsetbox(loc='lower left', child=ann_box, pad=0,
 5. 标注中英文字体分离？
 6. 没用 bbox_inches='tight'？
 7. 横坐标居中不与刻度重叠？
+
+---
+
+## 十一、SPSS 过程数据导出模块
+
+### 11.1 SPSS 风格过程数据 Excel 模板
+
+每次问卷/统计分析，**必须同时生成 SPSS 风格过程数据 Excel**，内容包括：
+
+| Sheet 类型 | 内容 |
+|-----------|------|
+| 可靠性统计 | 各维度 Cronbach's α |
+| 项总计统计 | 校正项总计相关、删项后 α |
+| KMO/Bartlett | KMO 整体 + 个别 KMO + 卡方/df/p |
+| 描述统计 | N/Min/Max/Mean/SD/Var/Skew/Kurt |
+| 相关性 | 三层矩阵：Pearson r + Sig.(双尾) + N |
+| t检验-组统计 | N/均值/标准差/标准误均值 |
+| t检验-检验结果 | Levene F/Sig + 等方差/不等方差两行(t/df/p/均值差/CI) |
+| ANOVA-描述 | 各组 N/Mean/SD/SE/95%CI/Min/Max + 合计 |
+| ANOVA-齐性检验 | Levene 统计量/df1/df2/Sig |
+| ANOVA-方差分析 | SS/df/MS/F/Sig（组间/组内/总计） |
+| ANOVA-事后LSD | (I)组-(J)组 均值差/SE/Sig/95%CI |
+| 回归-模型摘要 | R/R²/Adj.R²/SE/Durbin-Watson |
+| 回归-ANOVA | SS/df/MS/F/Sig |
+| 回归-系数 | B/SE/β/t/Sig/95%CI/Tolerance/VIF |
+| 回归-残差统计 | 预测值/残差/标准化预测值/标准化残差 |
+| 因子-总方差解释 | 全部成分的初始特征值 + 提取/旋转载荷平方和 |
+| 因子-成分矩阵 | 未旋转因子载荷 |
+| 因子-旋转成分矩阵 | Varimax 旋转后因子载荷 |
+| 因子-共同度 | 初始=1 + 提取共同度 |
+| CFA拟合指标 | χ²/df/GFI/CFI/TLI/RMSEA/SRMR/AIC/BIC |
+
+### 11.2 生成 SPSS .sps 语法文件
+
+> ⚠️ **编码铁律**：.sps 文件必须用 **GBK 编码**保存，UTF-8 会在 SPSS 中显示乱码。
+
+```python
+# 保存为 GBK
+with open('analysis.sps', 'w', encoding='gbk') as f:
+    f.write(syntax_content)
+```
+
+**语法模板要点**：
+
+```spss
+* 读取数据.
+GET FILE='path/to/data.sav'.
+
+* 信度分析.
+RELIABILITY /VARIABLES=Q1 Q2 Q3
+  /SCALE('维度名') ALL
+  /MODEL=ALPHA
+  /STATISTICS=DESCRIPTIVE SCALE
+  /SUMMARY=TOTAL.
+
+* 因子分析（含 KMO）.
+FACTOR /VARIABLES=Q1 TO Q20
+  /PRINT INITIAL KMO EXTRACTION ROTATION
+  /CRITERIA FACTORS(5) ITERATE(25)
+  /EXTRACTION PC
+  /ROTATION VARIMAX.
+
+* 独立样本 t 检验.
+T-TEST GROUPS=gender(1 2)
+  /VARIABLES=dim1 dim2 dim3
+  /CRITERIA=CI(.95).
+
+* ANOVA + LSD 事后比较.
+ONEWAY dim1 dim2 dim3 BY age
+  /STATISTICS DESCRIPTIVES HOMOGENEITY
+  /POSTHOC=LSD ALPHA(0.05).
+
+* 多元回归.
+REGRESSION
+  /STATISTICS COEFF OUTS R ANOVA COLLIN TOL
+  /DEPENDENT satisfaction
+  /METHOD=ENTER dim1 dim2 dim3
+  /RESIDUALS DURBIN.
+
+* 保存输出.
+OUTPUT SAVE OUTFILE='path/to/output.spv'.
+```
+
+**SPSS 命令行运行**（SPSS 27 无 `statisticsb`）：
+- `stats.com` 不支持 `-f`/`-type`/`-out` 参数
+- 正确方式：用 `stats.com syntax.sps` 打开 → SPSS GUI 中运行全部
+- 或在语法末尾写 `OUTPUT SAVE` 自动保存 .spv
