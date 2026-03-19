@@ -96,7 +96,7 @@ description: >
 | `ttest.py` | `independent_ttest()` `paired_ttest()` `mann_whitney_u()` | t检验 |
 | `anova.py` | `oneway_anova()` `kruskal_test()` | 方差分析 |
 | `regression.py` | `ols_regression()` `hierarchical_regression()` `logistic_regression()` | 回归 |
-| `mediation.py` | `baron_kenny_mediation()` `bootstrap_mediation()` `moderation_test()` | 中介/调节 |
+| `mediation.py` | `bootstrap_mediation()`(默认) `baron_kenny_mediation()`(补充) `moderation_test()` | 中介/调节 |
 | `descriptive.py` | `demographic_table()` `chi_square_test()` `descriptive_stats()` | 描述统计 |
 | `word_utils.py` | `add_three_line_table()` `add_body_text()` `add_note()` `create_report_doc()` | Word报告 |
 | `report_builder.py` | 三层架构模板 + `verify_report()` | 全盘重算 |
@@ -164,7 +164,7 @@ vif_df = check_vif(df, ['age', 'bmi', 'education'])  # VIF>10 需处理
 │   ├─ 因变量有序 → 有序 Logit/Probit
 │   └─ 面板数据 → 固定效应 / 随机效应 / DID
 └─ 中介/调节
-    ├─ 中介效应 → 逐步回归 + Sobel检验（控制协变量）
+    ├─ 中介效应 → 🔴 Bootstrap（5000次，默认）+ Baron-Kenny（补充）
     └─ 调节效应 → 交互项 + 简单斜率分析
 ```
 
@@ -815,21 +815,22 @@ Step 2  描述性统计 + 相关矩阵
 
 Step 3  回归分析（控制变量 + 主效应）
 
-Step 4  中介效应检验
-        ├─ 逐步回归法（控制其他X维度为协变量）：
-        │   ├─ c路径：X → Y + 协变量（总效应）
-        │   ├─ a路径：X → M + 协变量
-        │   ├─ b+c'路径：X + M + 协变量 → Y
-        │   └─ 间接效应 = a×b
-        ├─ Sobel检验
-        │   ├─ Z = (a×b) / √(b²×SE_a² + a²×SE_b²)
-        │   └─ p<0.05 → 间接效应显著
+Step 4  中介效应检验（🔴 默认 Bootstrap）
+        ├─ Bootstrap 法（默认，5000次重采样）：
+        │   ├─ from mediation import bootstrap_mediation
+        │   ├─ result = bootstrap_mediation(df, x, m, y, n_boot=5000)
+        │   ├─ 95% CI 不含0 → 间接效应显著
+        │   └─ 报告：间接效应值 + 95% CI [lower, upper]
+        ├─ Baron-Kenny 法（补充，客户指定时才用）：
+        │   ├─ c路径：X → Y（总效应）
+        │   ├─ a路径：X → M
+        │   ├─ b+c'路径：X + M → Y
+        │   └─ Sobel检验 + 中介比例
         ├─ 中介类型判断：
-        │   ├─ Sobel显著 + c'显著 → 部分中介
-        │   ├─ Sobel显著 + c'不显著 + c显著 → 完全中介
-        │   ├─ Sobel显著 + c'不显著 + c不显著 → 仅间接中介
-        │   └─ Sobel不显著 → 中介不成立
-        └─ 中介比例 = a×b / c
+        │   ├─ CI不含0 + c'显著 → 部分中介
+        │   ├─ CI不含0 + c'不显著 → 完全中介
+        │   └─ CI包含0 → 中介不成立
+        └─ ⚠️ 不报中介比例（Bootstrap 下无意义），只报 CI
 
 Step 5  调节效应检验（如有）
         ├─ 交互项回归：X + W + X*W → Y
@@ -1144,7 +1145,7 @@ Step 5 【执行 + 交付】
 
 | 关键词 | 工作流 | 代码章节 |
 |--------|--------|---------|
-| 中介效应、Mediation、Sobel | **D 中介** | §4.5 |
+| 中介效应、Mediation、Bootstrap、Sobel | **D 中介** | §4.5 |
 | Sobel检验、间接效应、协变量 | D-Step4 | §4.5 |
 | 调节效应、交互项、简单斜率 | D-Step5 | §4.6 |
 | DID、双重差分、政策评估 | **E DID** | §4.7 |

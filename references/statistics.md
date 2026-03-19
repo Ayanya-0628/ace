@@ -116,15 +116,25 @@ result = chi_square_test(df, 'Group', '不良反应', {'实验组': '实验组',
 
 ### 4.5 中介效应（Mediation）
 
-> **默认方法：Sobel检验 + 控制协变量**
-> - 检验每个X维度的中介效应时，控制其他X维度作为协变量
-> - 显著性判断：Sobel Z检验（p<0.05）
-> - 理论依据：Hayes (2009) + Zhao et al. (2010)
-> - 总效应c不需要显著，只要间接效应a×b的Sobel检验显著即可
-> - 中介类型：部分中介（c'显著）/ 完全中介（c'不显著+c显著）/ 仅间接中介（c和c'均不显著）
+> **🔴 默认方法：Bootstrap（5000次重采样）**
+> - 客户未指定方法时，一律使用 Bootstrap
+> - 显著性判断：95% CI 不包含 0 → 间接效应显著
+> - 中介类型：CI不含0 + c'显著 → 部分中介 / CI不含0 + c'不显著 → 完全中介
+> - 不报中介比例（Bootstrap 下无意义），只报间接效应值 + 95% CI
+> - 理论依据：Preacher & Hayes (2008)
 >
-> 📦 代码见 `code_library/regression.py`
-> 📦 参考实现：`020 130/analysis_full.py` → `mediation_sobel_with_covariates()`
+> **补充方法：Baron-Kenny + Sobel（仅客户指定时使用）**
+> - 检验每个X维度的中介效应时，控制其他X维度作为协变量
+> - Sobel Z检验 p<0.05 → 间接效应显著
+>
+> 📦 `from mediation import bootstrap_mediation`（默认）
+> 📦 `from mediation import baron_kenny_mediation`（补充）
+>
+> ```python
+> from mediation import bootstrap_mediation
+> result = bootstrap_mediation(df, x='X', m='M', y='Y', n_boot=5000)
+> # result: {'indirect_effect': 0.15, 'ci_lower': 0.03, 'ci_upper': 0.28, 'significant': True}
+> ```
 
 
 ### 4.6 调节效应（Moderation）
