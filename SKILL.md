@@ -792,3 +792,49 @@ save_figure(fig, 'fig1.png')
 - 配色方案: `OKABE_ITO`, `GROUP_COLORS`, `SIG_COLORS`
 - 图表: `grouped_bar`, `line_with_sem`, `correlation_heatmap`, `did_coefficient_plot`, `roc_plot`
 - 辅助: `add_significance`, `save_figure`
+
+---
+
+## 十一、SPSS SPV 过程文件生成
+
+> 客户常要求交付 SPSS 过程文件（.spv），需通过 SPSS 内置 Python 接口生成。
+
+### 11.1 技术方案对比
+
+| 方案 | 中文标题 | OUTPUT SAVE | 稳定性 | 推荐度 |
+|------|---------|-------------|--------|--------|
+| **SpssClient**（GUI接口） | ✅ | ✅ | 高 | ⭐⭐⭐ 首选 |
+| **OMS + spss.Submit** | ❌ 英文 | N/A（OMS替代） | 高 | ⭐⭐ 回退 |
+| stats.exe -production | ❌ | ❌ | 低 | ❌ |
+| stats.com -f -type -out | ❌ | ❌ | 不支持 | ❌ |
+
+### 11.2 踩坑记录（SPSS 27 非 GUI 模式限制）
+
+- `OUTPUT NEW` / `OUTPUT SAVE`：非 GUI 模式（statisticspython3.bat 直接调 spss.Submit）不可用，报 errLevel 3
+- `SET OLANG=CHINESE`：非 GUI 模式不可用；SpssClient 模式下报错误号 833 但**不影响分析结果**
+- **OMS**：非 GUI 模式下导出 SPV 的唯一可靠方式，但输出标题为英文
+- **SpssClient**：GUI 模式接口，自动继承系统语言（中文），支持 OUTPUT SAVE
+- SPS 文件编码：SPSS 语法编辑器默认用系统编码（GBK），UTF-8 保存的中文会乱码
+
+### 11.3 推荐用法
+
+```python
+# 通过 statisticspython3.bat 执行
+# "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" your_script.py
+
+from spss_spv_generator import run_spss_analysis
+
+syntax_list = [
+    "LOGISTIC REGRESSION VARIABLES 分组 /METHOD=ENTER x1 /PRINT=CI(95) /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).",
+    "ROC x1 BY 分组 (1) /PLOT=CURVE(REFERENCE) /PRINT=SE COORDINATES /CRITERIA=CUTOFF(INCLUDE) TESTPOS(LARGE) DISTRIBUTION(FREE) CI(95).",
+]
+run_spss_analysis('data.sav', syntax_list, 'output.spv', 'data_with_pred.sav')
+```
+
+**完整脚本**：`scripts/spss_spv_generator.py`（含 SpssClient → OMS 自动回退）
+
+### 11.4 PowerShell 调用
+
+```powershell
+& "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" "run_spss_save_spv.py" 2>&1
+```
