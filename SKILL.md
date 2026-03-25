@@ -135,9 +135,7 @@ from pretest import check_vif
 vif_df = check_vif(df, ['age', 'bmi', 'education'])  # VIF>10 需处理
 ```
 
-
 ---
-
 
 ### 2.4 统计方法速查决策树
 
@@ -271,7 +269,6 @@ for row in table.rows:
 
 > 📦 代码见 `code_library/three_line_table.py`
 
-
 ### 6.4 表注格式
 
 - 中文宋体、英文 Times New Roman、五号
@@ -294,18 +291,15 @@ for row in table.rows:
 
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 **使用方式**：在每个 text/label/title 处通过 `fontproperties=` 参数指定：
 
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 **适用场景**：水平/垂直条形图、多子图、需严格满足「中文宋体 + 英文TNR」的学术图表。
 
 ### 7.2 配色方案
 
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 ### 7.3 图表模板
 
@@ -317,36 +311,29 @@ for row in table.rows:
 
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 #### 折线图 + 标准误
 
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 #### 相关矩阵热力图
 
 > 📦 代码见 `code_library/correlation.py`
 
-
 #### DID 系数图
 
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 #### ROC 曲线
 
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 ### 7.4 显著性标注
 
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 ### 7.5 图片导出
 
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 ### 7.6 图题格式
 
@@ -360,7 +347,6 @@ for row in table.rows:
 
 > 📦 代码见 `code_library/three_line_table.py`
 
-
 ---
 
 ### 7.7 学术图表字体铁律（实测验证版）
@@ -369,7 +355,6 @@ for row in table.rows:
 
 #### 字体对象定义
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 #### 字体规范表
 | 元素 | 中文 | 英文/数字 | 字号 |
@@ -383,20 +368,16 @@ for row in table.rows:
 #### 中英文混排：HPacker
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 #### 刻度设置
 > 📦 代码见 `code_library/plot_bindent.py`
 
-
 #### 图例混排（DrawingArea + HPacker + VPacker）
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 注意：全角括号（）必须在宋体TextArea中，TNR不含全角字符。
 
 #### 标注混排
 > 📦 代码见 `code_library/plot_bindent.py`
-
 
 #### 布局铁律
 - 用 ig.subplots_adjust(left=0.14, bottom=0.15, top=0.90, right=0.95) 手动布局
@@ -515,11 +496,132 @@ ML：scikit-learn, shap, optuna, xgboost
 
 - [ ] 脚本代码（可复现）
 
+### 10.4 SPSS 语法文件 (.sps) 编码铁律
+
+> **核心原则**：如果在 Windows 下生成给客户在 SPSS 中双击打开运行的 `.sps` 语法文件，**必须**使用带有 BOM 的 UTF-8 编码（`utf-8-sig`）。无 BOM 的 `.sps` 会导致 SPSS 读取中文乱码。
+
+**正确示例**（必须遵守）：
+```python
+with open('syntax.sps', 'w', encoding='utf-8-sig') as f:
+    f.write(spss_code)
+```
+
 ---
 
-## 📂 SPSS 专项 → 按需加载
+## 📂 SPSS 专项
 
-> §11 SPSS 原生输出工作流已移至 `references/spss_workflow.md`。
+> §11 SPSS 原生输出工作流详见 `references/spss_workflow.md`。
+
+### 11.A SPSS SPV 过程文件生成
+
+> 客户常要求交付 SPSS 过程文件（.spv），需通过 SPSS 内置 Python 接口生成。
+
+### 11.1 技术方案对比
+
+| 方案 | 中文标题 | OUTPUT SAVE | 稳定性 | 推荐度 |
+|------|---------|-------------|--------|--------|
+| **SpssClient**（GUI接口） | ✅ | ✅ | 高 | ⭐⭐⭐ 首选 |
+| **OMS + spss.Submit** | ❌ 英文 | N/A（OMS替代） | 高 | ⭐⭐ 回退 |
+| stats.exe -production | ❌ | ❌ | 低 | ❌ |
+| stats.com -f -type -out | ❌ | ❌ | 不支持 | ❌ |
+
+### 11.2 踩坑记录（SPSS 27 非 GUI 模式限制）
+
+- `OUTPUT NEW` / `OUTPUT SAVE`：非 GUI 模式（statisticspython3.bat 直接调 spss.Submit）不可用，报 errLevel 3
+- `SET OLANG=CHINESE`：非 GUI 模式不可用；SpssClient 模式下报错误号 833 但**不影响分析结果**
+- **OMS**：非 GUI 模式下导出 SPV 的唯一可靠方式，但输出标题为英文
+- **SpssClient**：GUI 模式接口，自动继承系统语言（中文），支持 OUTPUT SAVE
+- SPS 文件编码：SPSS 语法编辑器默认用系统编码（GBK），UTF-8 保存的中文会乱码
+
+### 11.3 推荐用法
+
+```python
+# 通过 statisticspython3.bat 执行
+# "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" your_script.py
+
+from spss_spv_generator import run_spss_analysis
+
+syntax_list = [
+    "LOGISTIC REGRESSION VARIABLES 分组 /METHOD=ENTER x1 /PRINT=CI(95) /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).",
+    "ROC x1 BY 分组 (1) /PLOT=CURVE(REFERENCE) /PRINT=SE COORDINATES /CRITERIA=CUTOFF(INCLUDE) TESTPOS(LARGE) DISTRIBUTION(FREE) CI(95).",
+]
+run_spss_analysis('data.sav', syntax_list, 'output.spv', 'data_with_pred.sav')
+```
+
+**完整脚本**：`scripts/spss_spv_generator.py`（含 SpssClient → OMS 自动回退）
+
+### 11.4 PowerShell 调用
+
+```powershell
+& "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" "run_spss_save_spv.py" 2>&1
+```
+
+### 11.5 问卷星SAV → SPV 两步法（pyreadstat不兼容时）
+
+> **适用场景**：问卷星导出的SAV文件（header含`pmStation spssw`），pyreadstat/pandas.read_spss报`Invalid file`。
+
+**第一步**：SPSS导出CSV（GBK编码SPS）
+```spss
+GET FILE='原始数据.sav'.
+SAVE TRANSLATE OUTFILE='raw_data.csv'
+  /TYPE=CSV /MAP /REPLACE /FIELDNAMES
+  /KEEP Q1_1 Q2_1 ...
+```
+
+⚠️ **铁律**：
+- SPS文件必须**GBK编码**：`open(f, 'w', encoding='gbk')`
+- **禁止** `/ENCODING='UTF8'`（SPSS 27误解析为密码，报5364）
+- **禁止** `/CELLS=LABELS`（人口学变量导出为文本值标签）
+
+**第二步**：Python读CSV → pyreadstat写干净SAV → 生成SPS
+```python
+df = pd.read_csv('raw_data.csv', encoding='utf-8-sig')
+# 计算均分、分组变量
+# MWU分组变量用$SYSMIS排除法预计算
+for a, b in pairs:
+    df[f'g{a}{b}'] = np.nan
+    df.loc[df['cond']==a, f'g{a}{b}'] = 1.0
+    df.loc[df['cond']==b, f'g{a}{b}'] = 2.0
+pyreadstat.write_sav(df, 'clean.sav', column_labels=..., variable_value_labels=...)
+```
+
+**MWU兼容方案**（SPS中只需一行）：
+```spss
+NPAR TESTS /M-W=PI BY g12(1 2).
+```
+
+### 11.B SPSS PROCESS 宏语法生成铁律（实测验证版 2026-03-25）
+
+`C:\Users\16342\.antigravity\skills\ace\code_library\generate_spss_syntax_template.py`
+
+### 五条铁律
+
+1. **编码铁律**
+   - 普通 SPSS 语法 → `encoding='gbk'`
+   - 涉及 PROCESS 宏（内嵌 process.sps）→ `encoding='utf-8-sig'`
+   - **绝对禁止**用 write_to_file 直接写 .sps 文件（默认 UTF-8 无 BOM，必乱码）
+
+2. **PROCESS 宏加载铁律**
+   - INSERT/INCLUDE 加载 process.sps 会**静默失败**
+   - **唯一可靠方案**：将 process.sps 全文内嵌到语法文件开头
+   - 末尾的 `process activate=1.` 是必需激活调用，**不能删除**
+
+3. **变量名铁律**
+   - PROCESS MATRIX 引擎要求变量名 **<= 8 字符**
+   - 用 `ensure_short_varnames()` 函数预处理 SAV 文件
+
+4. **路径铁律**
+   - SAV 路径必须是**绝对路径**（SPSS 工作目录不可控）
+   - 路径用单反斜杠即可
+
+5. **参数格式铁律**
+   - 参数用 `/` 分隔写在一行：`PROCESS y=Y/x=X/m=M1 M2/model=6/boot=5000.`
+   - 多个中介变量用空格分隔
+
+### 核心函数（模板中提供）
+- `generate_process_sps()` — 生成内嵌 PROCESS 宏的 .sps 文件
+- `generate_plain_sps()` — 生成普通 GBK 编码的 .sps 文件
+- `ensure_short_varnames()` — 缩短 SAV 变量名到 <= 8 字符
 
 ---
 
@@ -621,7 +723,6 @@ female = ((sex == 2) | (sex == 0)).sum()  # 兼容两种编码
 female = (sex == 2).sum()  # 如果数据中用0表示女则漏计
 ```
 
-
 ## 十三、交付文件版本管理（铁律）
 
 ### 13.1 核心原则
@@ -662,6 +763,49 @@ female = (sex == 2).sum()  # 如果数据中用0表示女则漏计
 - **代码位置**：`plot_moderation.py` 的 `ax.set_ylim()` 行
 
 ---
+
+### 13.6 交付成果文件夹强制规则（铁律 F）
+
+所有最终交付文件（报告、数据附表、SPSS文件、图表等）**必须且仅存放于** `交付成果/` 文件夹。
+
+- 每次生成交付文件时，若 `交付成果/` 不存在则自动创建
+- 项目根目录**禁止残留**报告/SPSS/图表等产出文件
+- 交付完成后检查根目录，残留的产出文件必须移入 `交付成果/`
+- 中间脚本（`.py`）和原始数据保留在根目录，不属于交付文件
+
+### 13.7 交付文件命名规范（铁律 G）
+
+### 铁律 G：交付文件命名规范
+
+所有交付文件必须按以下模板命名：
+
+**`{项目编号}_{类型简码}_{主题关键词}.{ext}`**
+
+示例：`085_报告_生物测定分析.docx`、`091_数据_SPSS过程数据.xlsx`
+
+**类型简码表**：
+
+| 文件类型 | 简码 | 扩展名 | 命名示例 |
+|---------|------|--------|---------|
+| 分析报告 | 报告 | .docx | `085_报告_生物测定分析.docx` |
+| 数据附表 | 数据 | .xlsx | `085_数据_SPSS过程数据.xlsx` |
+| SPSS语法 | SPS | .sps | `085_SPS_生存分析.sps` |
+| SPSS数据 | SAV | .sav | `085_SAV_个体水平数据.sav` |
+| SPSS输出 | SPV | .spv | `085_SPV_分析结果.spv` |
+| 统计图表 | 图 | .png | `085_图_KM生存曲线.png` |
+| 打包交付 |  | .zip | `085_交付成果.zip` |
+
+**命名细则**：
+1. **项目编号**：取项目文件夹名中的数字编号（如 `085`），无编号项目用简短标识
+2. **主题关键词**：3-8个汉字，简要描述内容，禁止空格和特殊字符
+3. **版本迭代**：加后缀 `_v2`、`_v3`，如 `085_报告_生物测定分析_v2.docx`
+4. **禁止**：文件名含空格、中文括号、"新建"、"副本"、"(1)" 等
+
+### 13.8 交付物检查清单（完整版）
+
+- [ ] 所有交付文件已放入 `交付成果/` 文件夹（铁律 F）
+- [ ] 所有交付文件名符合 `{编号}_{简码}_{关键词}.{ext}` 格式（铁律 G）
+- [ ] 项目根目录无残留的产出文件
 
 ## 📂 绘图代码沉淀 + Meta 分析 → 按需加载
 
@@ -1505,73 +1649,17 @@ def verify_report(docx_path, expected_checks):
 > §20 防御性代码模板（8个模板）→ `references/pitfalls.md`
 > 遇到问题时加载排查，新项目时加载复制防御模板。
 
+---
 
 ---
 
-## 置顶铁律区（补充）
-
-### 铁律 F：交付成果文件夹强制规则
-
-所有最终交付文件（报告、数据附表、SPSS文件、图表等）**必须且仅存放于** `交付成果/` 文件夹。
-
-- 每次生成交付文件时，若 `交付成果/` 不存在则自动创建
-- 项目根目录**禁止残留**报告/SPSS/图表等产出文件
-- 交付完成后检查根目录，残留的产出文件必须移入 `交付成果/`
-- 中间脚本（`.py`）和原始数据保留在根目录，不属于交付文件
-
-### 铁律 G：交付文件命名规范
-
-所有交付文件必须按以下模板命名：
-
-**`{项目编号}_{类型简码}_{主题关键词}.{ext}`**
-
-示例：`085_报告_生物测定分析.docx`、`091_数据_SPSS过程数据.xlsx`
-
-**类型简码表**：
-
-| 文件类型 | 简码 | 扩展名 | 命名示例 |
-|---------|------|--------|---------|
-| 分析报告 | 报告 | .docx | `085_报告_生物测定分析.docx` |
-| 数据附表 | 数据 | .xlsx | `085_数据_SPSS过程数据.xlsx` |
-| SPSS语法 | SPS | .sps | `085_SPS_生存分析.sps` |
-| SPSS数据 | SAV | .sav | `085_SAV_个体水平数据.sav` |
-| SPSS输出 | SPV | .spv | `085_SPV_分析结果.spv` |
-| 统计图表 | 图 | .png | `085_图_KM生存曲线.png` |
-| 打包交付 |  | .zip | `085_交付成果.zip` |
-
-**命名细则**：
-1. **项目编号**：取项目文件夹名中的数字编号（如 `085`），无编号项目用简短标识
-2. **主题关键词**：3-8个汉字，简要描述内容，禁止空格和特殊字符
-3. **版本迭代**：加后缀 `_v2`、`_v3`，如 `085_报告_生物测定分析_v2.docx`
-4. **禁止**：文件名含空格、中文括号、"新建"、"副本"、"(1)" 等
-
-### 交付物检查清单
-
-- [ ] Excel 分析附表（原始数据 + 统计结果）
-- [ ] Word 报告（三线表 + 结果分析文字 + 图表）
-- [ ] 图表文件（PNG 200dpi，已嵌入 Word）
-- [ ] 脚本代码（可复现）
-- [ ] 所有交付文件已放入 `交付成果/` 文件夹（铁律 F）
-- [ ] 所有交付文件名符合 `{编号}_{简码}_{关键词}.{ext}` 格式（铁律 G）
-- [ ] 项目根目录无残留的产出文件
-
-### 9.4 SPSS 语法文件 (.sps) 编码铁律
-
-> **核心原则**：如果在 Windows 下生成给客户在 SPSS 中双击打开运行的 `.sps` 语法文件，**必须**使用带有 BOM 的 UTF-8 编码（`utf-8-sig`）。无 BOM 的 `.sps` 会导致 SPSS 读取中文乱码。
-
-**正确示例**（必须遵守）：
-```python
-with open('syntax.sps', 'w', encoding='utf-8-sig') as f:
-    f.write(spss_code)
-```
-
----
-
-## 十、scripts/ 可执行工具脚本
+## 附录：scripts/ 可执行工具脚本
 
 > 位于 `scripts/` 目录下，可直接 `python` 执行或作为模块 `import`。
 
-### 10.1 check_assumptions.py — 前置检验一键工具
+> 位于 `scripts/` 目录下，可直接 `python` 执行或作为模块 `import`。
+
+### A.1 check_assumptions.py — 前置检验一键工具
 
 ```bash
 python scripts/check_assumptions.py data.xlsx --cols HR MAP BIS --group 组别
@@ -1582,7 +1670,7 @@ python scripts/check_assumptions.py data.xlsx --cols score --vif x1 x2 x3
 - 多重共线性诊断（VIF）
 - 彩色终端报告 + 综合建议
 
-### 10.2 anova_pipeline.py — 方差分析流水线
+### A.2 anova_pipeline.py — 方差分析流水线
 
 ```bash
 python scripts/anova_pipeline.py data.xlsx --indicators HR MAP --group 组别 --time 时间 \
@@ -1593,7 +1681,7 @@ python scripts/anova_pipeline.py data.xlsx --indicators HR MAP --group 组别 --
 - 三线表 Word 自动输出
 - 可作为模块导入: `from anova_pipeline import do_two_way_anova, cld_from_pmatrix`
 
-### 10.3 questionnaire_pipeline.py — 问卷分析流水线
+### A.3 questionnaire_pipeline.py — 问卷分析流水线
 
 ```bash
 python scripts/questionnaire_pipeline.py data.xlsx \
@@ -1604,7 +1692,7 @@ python scripts/questionnaire_pipeline.py data.xlsx \
 - KMO + Bartlett → EFA
 - 结果导出 Excel
 
-### 10.4 three_line_table.py — 三线表 Word 生成器
+### A.4 three_line_table.py — 三线表 Word 生成器
 
 ```python
 from three_line_table import ThreeLineTable, create_doc_portrait
@@ -1615,7 +1703,7 @@ ThreeLineTable.build_regression(doc, models=[...])  # 回归结果表
 doc.save('output.docx')
 ```
 
-### 10.5 plot_utils.py — 学术绘图工具集
+### A.5 plot_utils.py — 学术绘图工具集
 
 ```python
 from plot_utils import init_style, grouped_bar, correlation_heatmap, save_figure
@@ -1625,120 +1713,3 @@ save_figure(fig, 'fig1.png')
 ```
 - 配色方案: `OKABE_ITO`, `GROUP_COLORS`, `SIG_COLORS`
 - 图表: `grouped_bar`, `line_with_sem`, `correlation_heatmap`, `did_coefficient_plot`, `roc_plot`
-- 辅助: `add_significance`, `save_figure`
-
----
-
-## 十一、SPSS SPV 过程文件生成
-
-> 客户常要求交付 SPSS 过程文件（.spv），需通过 SPSS 内置 Python 接口生成。
-
-### 11.1 技术方案对比
-
-| 方案 | 中文标题 | OUTPUT SAVE | 稳定性 | 推荐度 |
-|------|---------|-------------|--------|--------|
-| **SpssClient**（GUI接口） | ✅ | ✅ | 高 | ⭐⭐⭐ 首选 |
-| **OMS + spss.Submit** | ❌ 英文 | N/A（OMS替代） | 高 | ⭐⭐ 回退 |
-| stats.exe -production | ❌ | ❌ | 低 | ❌ |
-| stats.com -f -type -out | ❌ | ❌ | 不支持 | ❌ |
-
-### 11.2 踩坑记录（SPSS 27 非 GUI 模式限制）
-
-- `OUTPUT NEW` / `OUTPUT SAVE`：非 GUI 模式（statisticspython3.bat 直接调 spss.Submit）不可用，报 errLevel 3
-- `SET OLANG=CHINESE`：非 GUI 模式不可用；SpssClient 模式下报错误号 833 但**不影响分析结果**
-- **OMS**：非 GUI 模式下导出 SPV 的唯一可靠方式，但输出标题为英文
-- **SpssClient**：GUI 模式接口，自动继承系统语言（中文），支持 OUTPUT SAVE
-- SPS 文件编码：SPSS 语法编辑器默认用系统编码（GBK），UTF-8 保存的中文会乱码
-
-### 11.3 推荐用法
-
-```python
-# 通过 statisticspython3.bat 执行
-# "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" your_script.py
-
-from spss_spv_generator import run_spss_analysis
-
-syntax_list = [
-    "LOGISTIC REGRESSION VARIABLES 分组 /METHOD=ENTER x1 /PRINT=CI(95) /CRITERIA=PIN(0.05) POUT(0.10) ITERATE(20) CUT(0.5).",
-    "ROC x1 BY 分组 (1) /PLOT=CURVE(REFERENCE) /PRINT=SE COORDINATES /CRITERIA=CUTOFF(INCLUDE) TESTPOS(LARGE) DISTRIBUTION(FREE) CI(95).",
-]
-run_spss_analysis('data.sav', syntax_list, 'output.spv', 'data_with_pred.sav')
-```
-
-**完整脚本**：`scripts/spss_spv_generator.py`（含 SpssClient → OMS 自动回退）
-
-### 11.4 PowerShell 调用
-
-```powershell
-& "C:\Program Files\IBM\SPSS\Statistics\27\statisticspython3.bat" "run_spss_save_spv.py" 2>&1
-```
-
-### 11.5 问卷星SAV → SPV 两步法（pyreadstat不兼容时）
-
-> **适用场景**：问卷星导出的SAV文件（header含`pmStation spssw`），pyreadstat/pandas.read_spss报`Invalid file`。
-
-**第一步**：SPSS导出CSV（GBK编码SPS）
-```spss
-GET FILE='原始数据.sav'.
-SAVE TRANSLATE OUTFILE='raw_data.csv'
-  /TYPE=CSV /MAP /REPLACE /FIELDNAMES
-  /KEEP Q1_1 Q2_1 ...
-```
-
-⚠️ **铁律**：
-- SPS文件必须**GBK编码**：`open(f, 'w', encoding='gbk')`
-- **禁止** `/ENCODING='UTF8'`（SPSS 27误解析为密码，报5364）
-- **禁止** `/CELLS=LABELS`（人口学变量导出为文本值标签）
-
-**第二步**：Python读CSV → pyreadstat写干净SAV → 生成SPS
-```python
-df = pd.read_csv('raw_data.csv', encoding='utf-8-sig')
-# 计算均分、分组变量
-# MWU分组变量用$SYSMIS排除法预计算
-for a, b in pairs:
-    df[f'g{a}{b}'] = np.nan
-    df.loc[df['cond']==a, f'g{a}{b}'] = 1.0
-    df.loc[df['cond']==b, f'g{a}{b}'] = 2.0
-pyreadstat.write_sav(df, 'clean.sav', column_labels=..., variable_value_labels=...)
-```
-
-**MWU兼容方案**（SPS中只需一行）：
-```spss
-NPAR TESTS /M-W=PI BY g12(1 2).
-```
-
-**参考脚本**：`3.24创建/代跑spss源文件/step1_export.sps` + `step2_build.py`
-
-## §19 SPSS 语法文件生成铁律（实测验证版 2026-03-25）
-
-### 模板路径
-`C:\Users\16342\.antigravity\skills\ace\code_library\generate_spss_syntax_template.py`
-
-### 五条铁律
-
-1. **编码铁律**
-   - 普通 SPSS 语法 → `encoding='gbk'`
-   - 涉及 PROCESS 宏（内嵌 process.sps）→ `encoding='utf-8-sig'`
-   - **绝对禁止**用 write_to_file 直接写 .sps 文件（默认 UTF-8 无 BOM，必乱码）
-
-2. **PROCESS 宏加载铁律**
-   - INSERT/INCLUDE 加载 process.sps 会**静默失败**
-   - **唯一可靠方案**：将 process.sps 全文内嵌到语法文件开头
-   - 末尾的 `process activate=1.` 是必需激活调用，**不能删除**
-
-3. **变量名铁律**
-   - PROCESS MATRIX 引擎要求变量名 **<= 8 字符**
-   - 用 `ensure_short_varnames()` 函数预处理 SAV 文件
-
-4. **路径铁律**
-   - SAV 路径必须是**绝对路径**（SPSS 工作目录不可控）
-   - 路径用单反斜杠即可
-
-5. **参数格式铁律**
-   - 参数用 `/` 分隔写在一行：`PROCESS y=Y/x=X/m=M1 M2/model=6/boot=5000.`
-   - 多个中介变量用空格分隔
-
-### 核心函数（模板中提供）
-- `generate_process_sps()` — 生成内嵌 PROCESS 宏的 .sps 文件
-- `generate_plain_sps()` — 生成普通 GBK 编码的 .sps 文件
-- `ensure_short_varnames()` — 缩短 SAV 变量名到 <= 8 字符
