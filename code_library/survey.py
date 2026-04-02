@@ -34,10 +34,12 @@ def kmo_bartlett(df):
     """KMO 和 Bartlett 球形检验
     
     Returns:
-        dict: {'kmo': float, 'bartlett_chi2': float, 'bartlett_p': float,
-               'suitable': bool}
+        dict: {'kmo': float, 'bartlett_chi2': float, 'bartlett_df': int,
+               'bartlett_p': float, 'suitable': bool}
         KMO>0.6 且 Bartlett p<0.05 适合因子分析
     """
+    p_count = df.shape[1]  # 变量个数
+    dof = int(p_count * (p_count - 1) / 2)
     try:
         from factor_analyzer.factor_analyzer import (
             calculate_kmo, calculate_bartlett_sphericity)
@@ -47,16 +49,15 @@ def kmo_bartlett(df):
         # factor_analyzer 不可用时手动计算 Bartlett
         n = len(df)
         corr = df.corr()
-        p_val = len(corr)
         det = np.linalg.det(corr)
-        chi2 = -(n - 1 - (2 * p_val + 5) / 6) * np.log(det) if det > 0 else 999
-        dof = p_val * (p_val - 1) / 2
+        chi2 = -(n - 1 - (2 * p_count + 5) / 6) * np.log(det) if det > 0 else 999
         p = 1 - stats.chi2.cdf(chi2, dof)
         kmo_model = 0  # 无法计算 KMO
     
     return {
         'kmo': round(float(kmo_model), 4),
         'bartlett_chi2': round(float(chi2), 2),
+        'bartlett_df': dof,
         'bartlett_p': round(float(p), 4),
         'suitable': float(kmo_model) > 0.6 and float(p) < 0.05,
     }
