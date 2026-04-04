@@ -137,3 +137,121 @@ def cramers_v(contingency_table):
     n = contingency_table.sum().sum()
     k = min(contingency_table.shape) - 1
     return round(np.sqrt(chi2 / (n * k)), 3) if n * k > 0 else 0
+
+
+# ══════ 批量卡方交叉检验（多自变量 × 多因变量） ══════
+
+def batch_chi_square(df, row_vars, col_vars, row_labels=None, col_labels=None):
+    """批量卡方检验：多个分类自变量 × 多个分类因变量
+    
+    适用场景：人口学特征(Q1-Q8) × 满意度/态度变量(Q17-Q21)
+    
+    Args:
+        df: DataFrame
+        row_vars: 自变量列名列表（如人口学变量）
+        col_vars: 因变量列名列表（如满意度变量）
+        row_labels: {列名: 显示名} 映射（可选）
+        col_labels: {列名: 显示名} 映射（可选）
+    
+    Returns:
+        dict: {
+            'summary': DataFrame (汇总表),
+            'crosstabs': {(row, col): DataFrame},
+            'tests': {(row, col): dict}
+        }
+    """
+    if row_labels is None:
+        row_labels = {v: v for v in row_vars}
+    if col_labels is None:
+        col_labels = {v: v for v in col_vars}
+    
+    summary_rows = []
+    crosstabs = {}
+    tests = {}
+    
+    for rv in row_vars:
+        for cv in col_vars:
+            sub = df[[rv, cv]].dropna()
+            if len(sub) < 10:
+                continue
+            
+            ct = pd.crosstab(sub[rv], sub[cv])
+            # 去掉频数为0的行/列
+            ct = ct.loc[(ct.sum(axis=1) > 0), (ct.sum(axis=0) > 0)]
+            
+            if ct.shape[0] < 2 or ct.shape[1] < 2:
+                continue
+            
+            chi2, p, dof, expected = stats.chi2_contingency(ct)
+            low_expected = (expected < 5).sum()
+            total_cells = expected.size
+            low_pct = low_expected / total_cells * 100
+            
+            sig = '**' if p < 0.01 else ('*' if p < 0.05 else 'ns')
+            
+            # Fisher精确检验（仅2×2表）
+            fisher_p = None
+            if ct.shape == (2, 2):
+                try:
+                    _, fisher_p = stats.fisher_exact(ct)
+                except:
+                    pass
+            
+            # 交叉表（带合计）
+            ct_full = pd.crosstab(sub[rv], sub[cv], margins=True, margins_name='合计')
+            crosstabs[(rv, cv)] = ct_full
+            
+            test_result = {
+                'chi2': round(chi2, 4), 'p': round(p, 4),
+                'dof': int(dof), 'sig': sig,
+                'low_expected_pct': round(low_pct, 1),
+                'fisher_p': round(fisher_p, 4) if fisher_p else None,
+                'v': cramers_v(ct),
+            }
+            tests[(rv, cv)] = test_result
+            
+            summary_rows.append({
+                '自变量': row_labels.get(rv, rv),
+                '因变量': col_labels.get(cv, cv),
+                'χ²': round(chi2, 4),
+                'df': int(dof),
+                'P值': round(p, 4),
+                '显著性': sig,
+                "Cramér's V": cramers_v(ct),
+                '期望频数<5占比(%)': round(low_pct, 1),
+            })
+    
+    return {
+        'summary': pd.DataFrame(summary_rows),
+        'crosstabs': crosstabs,
+        'tests': tests,
+    }
+
+
+# ══════ 频数分布表（单变量） ══════
+
+def frequency_table(series, sort='count', ascending=False):
+    """单变量频数分布表
+    
+    Args:
+        series: pd.Series
+        sort: 'count'(按频数) / 'value'(按值) / None(不排序)
+    
+    Returns:
+        DataFrame: 值, 频数, 百分比, 累计百分比
+    """
+    vc = series.value_counts(dropna=True)
+    if sort == 'value':
+        vc = vc.sort_index(ascending=ascending)
+    elif sort == 'count':
+        vc = vc.sort_values(ascending=ascending)
+    
+    total = vc.sum()
+    df_out = pd.DataFrame({
+        '值': vc.index,
+        '频数': vc.values,
+        '百分比(%)': (vc.values / total * 100).round(1),
+    })
+    df_out['累计百分比(%)'] = df_out['百分比(%)'].cumsum().round(1)
+    return df_out.reset_index(drop=True)
+
