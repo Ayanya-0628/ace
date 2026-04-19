@@ -1,0 +1,76 @@
+# === A2 问卷+中介/调节效应 - 项目配置模板 ===
+project_type: A2_questionnaire_mediation
+project_name: "xxx影响研究——中介与调节效应分析"
+
+data_file: "问卷数据.xlsx"
+sheet_name: "Sheet1"
+
+likert_scale: 5
+likert_map:
+  "非常不同意": 1
+  "不同意": 2
+  "一般": 3
+  "同意": 4
+  "非常同意": 5
+
+# ── 量表定义（同A1） ──
+scales:
+  - name: "技术压力"
+    items: [Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13]
+    dimensions:
+      - name: "技术过载"
+        items: [Q6, Q7]
+      - name: "技术复杂性"
+        items: [Q8, Q9]
+      - name: "技术不安全感"
+        items: [Q10, Q11]
+      - name: "技术入侵"
+        items: [Q12, Q13]
+  - name: "数字倦怠"
+    items: [Q14, Q15, Q16, Q17, Q18, Q19]
+    dimensions: null
+  - name: "心理资本"
+    items: [Q20, Q21, Q22, Q23]
+    dimensions: null
+  - name: "组织支持感"
+    items: [Q24, Q25, Q26, Q27]
+    dimensions: null
+
+demographics:
+  - col: "性别"
+    type: binary
+    labels: {1: "男", 2: "女"}
+  - col: "年龄"
+    type: categorical
+    labels: {1: "20岁及以下", 2: "21-30岁", 3: "31-40岁"}
+
+# ── 回归设定 ──
+regression:
+  dependent: "数字倦怠"
+  independent: ["技术压力"]
+  controls: ["性别", "年龄"]
+
+# ── 假设检验 ──
+hypotheses:
+  - type: mediation           # 中介效应
+    H2: "心理资本在技术压力与数字倦怠间起中介作用"
+    iv: "技术压力"
+    mv: "心理资本"              # 中介变量
+    dv: "数字倦怠"
+
+  - type: moderation           # 调节效应
+    H3: "组织支持感调节技术压力与数字倦怠的关系"
+    iv: "技术压力"
+    moderator: "组织支持感"      # 调节变量
+    dv: "数字倦怠"
+
+  - type: moderation
+    H4: "组织支持感调节技术压力与心理资本的关系"
+    iv: "技术压力"
+    moderator: "组织支持感"
+    dv: "心理资本"
+
+output:
+  format: docx
+  format_preset: thesis_songti
+  output_dir: "交付成果"

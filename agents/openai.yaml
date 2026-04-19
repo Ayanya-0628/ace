@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ace"
+  short_description: "Stats, surveys, ML, and paper-ready analysis helper"
+  default_prompt: "Use $ace to inspect my dataset, choose an appropriate method, and produce code, figures, tables, and paper-style conclusions."

@@ -1,0 +1,107 @@
+# === A1 问卷全套分析 - 项目配置模板 ===
+# 使用方法：复制本文件到项目目录，修改各字段后运行 pipeline.py
+
+project_type: A1_questionnaire
+project_name: "xxx问卷分析"
+
+# ── 数据源 ──
+data_file: "问卷数据.xlsx"
+sheet_name: "Sheet1"
+encoding: "utf-8"            # 或 gbk
+header_row: 0                # 表头所在行（0-indexed）
+
+# ── 量表定义 ──
+# 每个量表必须有 name + items
+# 如有维度则写 dimensions，否则设为 null
+likert_scale: 5              # 几点量表（3/5/7）
+likert_map:                  # 文本→数值映射（如果是文本数据）
+  "非常不同意": 1
+  "不同意": 2
+  "一般": 3
+  "同意": 4
+  "非常同意": 5
+
+scales:
+  - name: "技术压力"
+    abbr: "TS"
+    items: [Q6, Q7, Q8, Q9, Q10, Q11, Q12, Q13]
+    dimensions:
+      - name: "技术过载"
+        items: [Q6, Q7]
+      - name: "技术复杂性"
+        items: [Q8, Q9]
+      - name: "技术不安全感"
+        items: [Q10, Q11]
+      - name: "技术入侵"
+        items: [Q12, Q13]
+
+  - name: "数字倦怠"
+    abbr: "DB"
+    items: [Q14, Q15, Q16, Q17, Q18, Q19]
+    dimensions:
+      - name: "情绪耗竭"
+        items: [Q14, Q15]
+      - name: "去人格化"
+        items: [Q16, Q17]
+      - name: "成就感降低"
+        items: [Q18, Q19]
+        reverse: true
+
+  - name: "心理资本"
+    abbr: "PC"
+    items: [Q20, Q21, Q22, Q23]
+    dimensions: null
+
+  - name: "组织支持感"
+    abbr: "OS"
+    items: [Q24, Q25, Q26, Q27]
+    dimensions: null
+
+# ── 人口学变量 ──
+demographics:
+  - col: "性别"
+    type: binary              # binary / categorical / ordinal
+    labels: {1: "男", 2: "女"}
+    test: ttest               # ttest / mann_whitney
+  - col: "年龄"
+    type: categorical
+    labels: {1: "20岁及以下", 2: "21-30岁", 3: "31-40岁", 4: "41-50岁", 5: "51岁及以上"}
+    test: anova               # anova / kruskal_wallis
+  - col: "学历"
+    type: ordinal
+    labels: {1: "高中及以下", 2: "本科", 3: "硕士及以上"}
+    test: anova
+  - col: "工作年限"
+    type: ordinal
+    labels: {1: "5年以下", 2: "6-10年", 3: "11-20年", 4: "20年以上"}
+    test: anova
+
+# ── 分析模块（按需开启） ──
+analysis:
+  normality_test: true        # 正态性检验
+  reliability: true           # 信度检验
+  validity: true              # 效度检验（KMO + EFA）
+  descriptive: true           # 描述性统计
+  correlation: true           # 相关分析
+  difference: true            # 差异分析（按人口学分组）
+  regression: true            # 多元线性回归
+  mediation: false            # 中介效应（A2类型开启）
+  moderation: false           # 调节效应
+
+# ── 回归设定（regression=true 时填写） ──
+regression:
+  dependent: "数字倦怠"       # 因变量
+  independent:                # 自变量
+    - "技术压力"
+  controls:                   # 控制变量（可选）
+    - "性别"
+    - "年龄"
+    - "学历"
+
+# ── 输出设定 ──
+output:
+  format: docx                # docx / xlsx
+  format_preset: thesis_songti
+  include_spss: true          # 是否生成 .sps 语法
+  include_excel: true         # 是否输出过程数据 Excel
+  output_dir: "交付成果"

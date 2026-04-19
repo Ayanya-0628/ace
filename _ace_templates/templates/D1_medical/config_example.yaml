@@ -1,0 +1,56 @@
+# === D1 医学临床统计 - 项目配置模板 ===
+# 适用：中医证型/体质分布、卡方检验、秩和检验、Logistic回归等
+project_type: D1_medical
+project_name: "xxx临床数据分析"
+
+data_file: "临床数据.xlsx"
+sheet_name: "Sheet1"
+
+# ── 变量定义 ──
+categorical_vars:              # 分类变量
+  - name: "性别"
+    col: "Sex"
+    labels: {1: "男", 2: "女"}
+  - name: "中医证型"
+    col: "TCM_Type"
+    labels: {1: "气滞血瘀证", 2: "痰湿阻络证", 3: "肝肾不足证", 4: "气血亏虚证"}
+  - name: "颈椎退变程度"
+    col: "Degeneration"
+    labels: {1: "轻度", 2: "中度", 3: "重度"}
+    ordinal: true
+
+continuous_vars:               # 连续变量
+  - name: "年龄"
+    col: "Age"
+    unit: "岁"
+  - name: "病程"
+    col: "Duration"
+    unit: "月"
+  - name: "VAS评分"
+    col: "VAS"
+    unit: "分"
+  - name: "NDI评分"
+    col: "NDI"
+    unit: "分"
+
+# ── 分析模块 ──
+analysis:
+  frequency: true              # 频数分布
+  descriptive: true            # 描述性统计
+  normality: true              # 正态性检验
+  chi_square: true             # 卡方检验
+  group_comparison:            # 组间比较（自动选择t/ANOVA/ManxWhitney/Kruskal）
+    group_var: "中医证型"
+    compare_vars: ["年龄", "病程", "VAS评分", "NDI评分"]
+  cross_tab:                   # 交叉分析
+    - row: "中医证型"
+      col: "颈椎退变程度"
+    - row: "中医证型"
+      col: "性别"
+  logistic: false              # Logistic回归
+  rank_correlation: false      # 秩相关（Spearman）
+
+output:
+  format: docx
+  format_preset: thesis_songti
+  output_dir: "交付成果"

@@ -1,0 +1,51 @@
+# === B1 截面实证回归分析 - 项目配置模板 ===
+project_type: B1_cross_section
+project_name: "xxx实证分析"
+
+data_file: "数据.xlsx"
+sheet_name: "Sheet1"
+
+# ── 变量定义 ──
+dependent: "Y"                    # 因变量列名
+independent:                      # 核心自变量
+  - "X1"
+  - "X2"
+controls:                         # 控制变量
+  - "Size"
+  - "Lev"
+  - "ROA"
+  - "Growth"
+  - "Age"
+
+# ── 数据预处理 ──
+preprocessing:
+  winsorize: true                 # 缩尾处理
+  winsorize_pct: [0.01, 0.99]     # 1%/99%
+  log_transform: []               # 需要对数化的变量
+  dummy_vars: []                  # 需要生成虚拟变量的列
+
+# ── 分析模块 ──
+analysis:
+  descriptive: true
+  correlation: true
+  vif_check: true
+  base_regression: true           # 基准回归
+  robustness:                     # 稳健性检验
+    - type: replace_var           # 替换核心变量
+      new_var: "X1_alt"
+    - type: subsample             # 子样本
+      filter_col: "Year"
+      filter_condition: ">= 2018"
+  heterogeneity:                  # 异质性分析
+    - group_col: "Region"
+      labels: {1: "东部", 2: "中部", 3: "西部"}
+    - group_col: "SOE"
+      labels: {0: "非国企", 1: "国企"}
+  endogeneity: false              # 内生性处理（2SLS）
+  mediation: false                # 中介效应
+
+# ── 输出 ──
+output:
+  format: docx
+  format_preset: thesis_songti
+  output_dir: "交付成果"

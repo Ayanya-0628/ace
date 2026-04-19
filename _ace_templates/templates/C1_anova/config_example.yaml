@@ -1,0 +1,58 @@
+# === C1 方差分析 - 项目配置模板 ===
+# 适用场景：实验组/对照组对比、多因素ANOVA、重复测量等
+project_type: C1_anova
+project_name: "xxx方差分析"
+
+data_file: "实验数据.xlsx"
+sheet_name: "Sheet1"
+
+# ── 数据格式 ──
+data_format: long             # long（长格式）或 wide（宽格式/SPSS格式）
+
+# ── 因素定义 ──
+factors:
+  - name: "组别"               # 因素A（组间因素）
+    col: "Group"
+    type: between              # between(组间) / within(组内)
+    labels: {1: "实验组", 2: "对照组", 3: "空白组"}
+  - name: "时间"               # 因素B（组内因素/重复测量时间点）
+    col: "Time"
+    type: within
+    labels: {1: "T0", 2: "T1", 3: "T2", 4: "T3"}
+
+# ── 指标定义 ──
+indicators:
+  - name: "HR"
+    col: "HR"
+    unit: "次/min"
+  - name: "MAP"
+    col: "MAP"
+    unit: "mmHg"
+  - name: "BIS"
+    col: "BIS"
+    unit: ""
+  - name: "NRS"
+    col: "NRS"
+    unit: "分"
+
+# ── 分析模块 ──
+analysis:
+  descriptive: true
+  normality: true
+  homogeneity: true            # 方差齐性检验
+  one_way_anova: true          # 单因素ANOVA
+  two_way_anova: false         # 双因素ANOVA
+  repeated_measures: false     # 重复测量方差分析
+  post_hoc: LSD                # 事后比较方法（LSD/Tukey/Bonferroni）
+  nonparametric: auto          # 非参数检验（auto=自动判断/true/false）
+
+# ── 三线表格式 ──
+table_style:
+  show_letters: true           # 显示LSD字母标记
+  lowercase_within: true       # 小写字母=同组不同时间
+  uppercase_between: true      # 大写字母=不同组
+
+output:
+  format: docx
+  format_preset: thesis_songti
+  output_dir: "交付成果"
