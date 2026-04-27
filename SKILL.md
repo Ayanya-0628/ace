@@ -122,6 +122,12 @@ description: >
 - 正式论文图片文件本体默认不放图题，图题统一写在 Word 正文中。
 - 坐标轴名称必须完整；有单位的指标必须显式写单位。
 - 单指标主图默认优先使用原始均值 ± 误差；效应总览图可用相对 CK 变化百分比；综合评价图可用标准化指数。
+- 中文科研图中英混排字体的稳定做法（2026-04-22 侯芳芳项目验证）：
+  - 目标是中文用宋体，英文、数字、单位、图例、刻度、显著性标记、公式变量用 Times New Roman 正体；不要默认斜体。
+  - Matplotlib 直接输出 PNG 时，中英混排标签容易被单一字体吞掉；更稳流程是先输出 SVG，并设置 `svg.fonttype='none'`，再用 `svg_font_splitter.py` 将中文与英文/数字拆成不同字体，最后再从修正后的 SVG 渲染 PNG。
+  - 若用 Chrome/Edge headless 渲染 SVG 为 PNG，必须按 SVG 原始尺寸设置截图窗口，并通过很小的 `right_extra`、`bottom_extra` 控制保留范围；不要一次性大幅扩边，也不要让截图裁掉边框、图例或坐标轴。
+  - 对 `K_L`、`K_N`、`K_N/K_L` 这类光氮分布参数，优先保证 Times New Roman 正体和大写下标 `L/N`；避免 mathtext 默认字体导致 DejaVu 或斜体。若使用 mathtext，必须显式设置 custom Times New Roman；若仍不稳，改用普通文本/分段绘制。
+  - 售后微调图件时只改用户点名的问题；若需要连带改导出方式、布局、字体方案或其它元素，必须先说明并等用户确认。
 - 图例默认放在不遮挡数据的位置，优先右上角或左上角；必要时应主动调大 Y 轴范围。
 - 柱状图若存在多处理比较，默认优先使用字母显著性分组，不只保留误差线。
 - Word 中正式表格默认使用三线表，不使用 `Table Grid` 式网格表。
@@ -141,6 +147,19 @@ description: >
 - 图表中英混排时必须逐元素指定字体：中文用 `宋体/黑体`，英文和数字用 `Times New Roman`；不得依赖系统自动回退或主题字体。
 - 若交付对象是客户或外部收件人，Word/PDF 正文默认禁止出现“给内部看的元说明”，例如“本次参考截图/文献”“变量按当前字段重建”“以下为说明”“本轮修正了”等过程性文字。
 - 客户版分析交付正文默认只保留：标题、表格/图、表注、结果分析、必要统计口径与直接结论；方法来源、截图参考、核查说明、版本差异等内容应写入核查日志、脚本注释或项目记录，不进入客户正文。
+
+## 0.1.3 客户版交付成品自动核查清单
+
+适用于 `兼职/` 下所有需要交付 Word 报告、论文式分析说明、正式统计表或客户可见结果文档的任务。只要用户没有明确要求保留过程说明，交付前必须回看最终成品文件，而不是只检查生成脚本。
+
+- 客户可见正文、表题、表注、文件名中默认不得出现过程化/内部化措辞，包括但不限于：`客户`、`本轮`、`当前设定`、`本报告`、`过程说明`、`交付`、`模拟`、`内部看的`、`用于本科论文`、`论文写作而言`、`按客户要求`、`结果整理`。确需说明数据版本或模拟属性时，应放入核查日志、项目记录或单独说明文件，不混入正式正文。
+- 标题、文件名和表格说明默认使用研究主题或指标名称，不使用 `本科论文`、`最终版`、`模拟调整版`、`核查版` 等内部交付标签作为客户可见主标题。
+- 样本量、频数、题项数、自由度等计数型数值默认显示为整数；百分比通常保留 2 位小数；系数、均值、标准差、Cronbach's α、KMO、CR、AVE、载荷、VIF 通常保留 3 位小数；`p` 值使用 `<0.001` 或 3 位小数，星号必须与 `p` 值一致。
+- 分组表、样本特征表、描述统计分块表中，重复的变量名默认只显示第一行，后续行留空；不得把同一变量名在每个类别行机械重复。
+- Word 成品必须核查 A4 页面、页边距、标题黑色、正文黑色、表格整体居中、表内文字居中、单元格段前段后为 0、首行/左右缩进为 0；三线表默认只保留顶线、表头下横线和底线。
+- 问卷/量表结果需核查信效度指标是否相互协调：Cronbach's α 与 CR 不应明显背离，AVE、因子载荷、KMO、Bartlett、CR 之间不能出现数学或统计逻辑矛盾；不能只把某个指标调到达标而破坏其他指标。
+- 回归、中介、调节等模型结果需核查 `N`、变量方向、显著性、置信区间、VIF 与正文结论一致；不得出现表格支持、正文不支持或星号与 `p` 值不一致。
+- 导出后必须用 `python-docx`、`openpyxl`、XML 检查或人工打开成品之一核对最终 `.docx`/`.xlsx`。如果目标文件被 Word 锁定，另存为清晰命名的修订文件，并在回复中说明实际成品路径。
 
 ## 0.2 多 Agent 补充路由
 
@@ -261,6 +280,129 @@ vif = pd.DataFrame({
 
 ```
 
+### 5.6.1 AMOS 原生图自动输出（本机已验证）
+
+- 适用场景：
+  - 客户明确要求 **AMOS 原生风格** 的测量模型图 / 路径图
+  - 不能接受 Python / matplotlib / draw.io 仿图
+  - 允许使用本机已安装的 `IBM SPSS Amos 29`
+- 重要边界：
+  - **分析结果本身不是默认“顺手自动出 AMOS 图”**。如果主分析最初不是在 AMOS 里跑的，而是 Python / SPSS / 其他流程跑的，则需要**单独重建一份 AMOS 模型文件**再导出图。
+  - 这条链路的核心是：**先有 `.amw`，再让 `AMOS CLI` 自动计算与导出**，而不是指望普通统计脚本自动附带一张 AMOS 图。
+- 本机已确认可用组件：
+  - `C:\Program Files\IBM\SPSS\Amos\29\AmosGraphicsCLI.exe`
+  - `C:\Program Files\IBM\SPSS\Amos\29\AmosFileManagerCLI.exe`
+  - `C:\Program Files\IBM\SPSS\Amos\29\R\Amos.R`
+  - `C:\Program Files\IBM\SPSS\Amos\29\Documentation\Programming Reference.pdf`
+- 官方 `R\Amos.R` 已明确暴露命令行参数思路：
+  - `-model <path-to-amw>`
+  - `-plugin CalculateEstimatesAndExit.vb`
+- 本机实测结论：
+  - 直接让 `CLI` 跑自定义 `.vb/.dll` 插件并不稳定，不应作为默认主路线。
+  - **更稳的默认路线** 是：
+    1. 先程序化生成 `.amw`
+    2. 再调用 `AmosGraphicsCLI.exe -model <amw> -plugin CalculateEstimatesAndExit.vb`
+    3. 等待 `AMOS` 自动生成输出文件
+    4. 若路径图已进入剪贴板，再由 PowerShell 把剪贴板中的图像落盘为 `.png`
+
+### 5.6.2 AMOS 原生图无人工输出推荐流程
+
+#### A. 准备数据文件
+
+- 优先使用 **ASCII 路径**，避免中文路径导致 `AMOS` / Office 组件兼容问题。
+- 这台机器上更稳的做法是先把数据复制到临时目录，例如：
+  - `C:\Users\16342\AppData\Local\Temp\amos_<project>\`
+- 数据格式优先级：
+  1. `.sav`
+  2. `.xls`
+  3. `.xlsx`
+- 如果只有 `.xlsx`，而 `.amw` 对 Excel 读取不稳定，可先转成 `.xls`：
+
+```powershell
+$src='C:\path\input.xlsx'
+$dst='C:\path\input.xls'
+$excel=New-Object -ComObject Excel.Application
+$excel.DisplayAlerts=$false
+$wb=$excel.Workbooks.Open($src)
+$xlExcel8=56
+$wb.SaveAs($dst,$xlExcel8)
+$wb.Close($false)
+$excel.Quit()
+```
+
+#### B. 生成 `.amw` 模型文件
+
+- 若客户只要图而不是重新在 `AMOS` 中建模，默认可直接程序化生成 `.amw`。
+- 实操要点：
+  - `.amw` 是**可编辑文本文件**，本机实测编码为 `UTF-16`
+  - 可以从 `C:\Program Files\IBM\SPSS\Amos\29\Examples\English\*.amw` 选一个结构接近的模板
+  - 重点需要改的段包括：
+    - `!@!ob`：对象块（矩形、椭圆、单箭头、双箭头、标题）
+    - `!@!dbname`
+    - `!@!dbtype`
+    - `!@!dbconnect`
+    - `!@!dbtable`
+- 常见数据连接写法（本机样例已见官方示例）：
+  - `SPSS`：`dbtype=2`，`dbconnect=SPSS`
+  - `Excel 8.0`：`dbtype=1`，`dbconnect=Excel 8.0`
+  - `Text`：`dbtype=1`，`dbconnect=Text`
+
+#### C. 用 CLI 自动计算
+
+- 默认命令：
+
+```powershell
+& 'C:\Program Files\IBM\SPSS\Amos\29\AmosGraphicsCLI.exe' `
+  '-model' 'C:\path\model.amw' `
+  '-plugin' 'CalculateEstimatesAndExit.vb'
+```
+
+- 这条链路本机已实测会自动生成这些原生结果文件（命名因项目而异）：
+  - `*.AmosOutput`
+  - `*.amp`
+  - `*_output.amw`
+  - `*.AmosHistory`
+
+#### D. 导出 AMOS 原生路径图
+
+- 若 CLI 运行后路径图已进入剪贴板，可直接用 PowerShell 抓图并保存：
+
+```powershell
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$img=[Windows.Forms.Clipboard]::GetImage()
+if($img -ne $null){
+  $out='C:\path\AMOS_native.png'
+  $img.Save($out,[System.Drawing.Imaging.ImageFormat]::Png)
+}
+```
+
+- 这一步拿到的就是**AMOS 原生图**，不是仿图。
+
+#### E. 默认决策
+
+- 用户明确说“必须是 AMOS 画 / AMOS 原生输出”：
+  - **优先走 `.amw + CLI + 原生导图`**
+  - 不要再拿 matplotlib 仿图替代
+- 用户只要“风格像 AMOS”：
+  - 可退回仿图路线
+- 如果 `AMOS CLI` 跑通了结果文件，但剪贴板未携带图像：
+  - 先保留 `.amw / .amp / .AmosOutput`
+  - 再判断是否需要补一层 GUI 自动化或人工导图
+- 如果用户要求“完全无人工”：
+  - 先明确：**只有在 `.amw` 生成 + CLI 自动计算 + 剪贴板导图都跑通时，才能宣称彻底无人工**
+  - 任一环未打通，都必须如实说明卡点
+
+### 5.6.3 本机已验证事实（2026-04-20）
+
+- `AmosGraphicsCLI.exe` 能稳定吃到 `-model` 和 `-plugin` 参数
+- `CalculateEstimatesAndExit.vb` 这条官方插件名在本机可触发自动计算
+- 本机已成功产出：
+  - `.AmosOutput`
+  - `.amp`
+  - `*_output.amw`
+- 本机已成功从系统剪贴板导出一张 `AMOS` 原生路径图为 `.png`
+- 因此：**这台机器上，AMOS 原生图的“无人工自动导出”是可行的，但前提是先准备好可用的 `.amw` 模型文件**
 
 ---
 
@@ -1589,7 +1731,7 @@ ML：scikit-learn, shap, optuna, xgboost
 
 ### Step 5. 结果核查
 
-每次分析完成后必须自动运行核查清单，并写入核查日志。核查至少包括以下 4 类：
+每次分析完成后必须自动运行核查清单，并写入核查日志。核查至少包括以下 5 类：
 
 1. 数值合理性
 - 均值是否落在量表范围内
@@ -1612,6 +1754,11 @@ ML：scikit-learn, shap, optuna, xgboost
 - 星号标记与 `p` 值是否一一对应
 - 置信区间、标准误、t/z/F/卡方值与显著性结论是否冲突
 - 表格、图注、正文中的显著性结论是否一致
+
+5. 客户可见版格式与口吻
+- 按 `0.1.3 客户版交付成品自动核查清单` 扫描最终 Word/Excel/Markdown，而不是只看脚本。
+- 正文、表题、表注和文件名不得残留内部过程词、版本说明词或“给客户/给本科论文用”的交付备注。
+- 计数型数值必须显示为整数，重复变量名默认仅首行显示，表格居中、无异常缩进、无主题色或高亮残留。
 
 若核查失败：
 
@@ -1650,7 +1797,9 @@ ML：scikit-learn, shap, optuna, xgboost
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v6.8 | 2026-04-21 | 补充“论文章节嵌入模式”规则：结果直接插入现有论文时，标题层级继承原章号；表题改用 `表4.1 ……分析表/检验表` 口径；当用户或论文原稿采用先文后表时，默认顺序切换为“结果分析 → 表题 → 表格 → 表注” |
+| v6.10 | 2026-04-25 | 新增客户版交付成品自动核查清单：内部过程词扫描、客户可见命名、N/频数整数化、重复变量名首行显示、Word 表格缩进与信效度指标协调性核查 |
+| v6.9 | 2026-04-21 | 补充“论文章节嵌入模式”规则：结果直接插入现有论文时，标题层级继承原章号；表题改用 `表4.1 ……分析表/检验表` 口径；当用户或论文原稿采用先文后表时，默认顺序切换为“结果分析 → 表题 → 表格 → 表注” |
+| v6.8 | 2026-04-20 | 新增本机已验证的 `AMOS` 原生图自动输出工作流：`.amw` 生成、`CLI` 自动计算、剪贴板原生导图、适用边界与回退策略 |
 | v6.7 | 2026-04-19 | 补充客户版描述统计/样本特征/单因素比较表格式：变量与类别默认分列，变量名仅首行显示；表格居中默认同时包含表框与单元格文字居中 |
 | v6.6 | 2026-04-19 | 补充客户版 Word 交付铁律：三线表默认只保留三条线、表格整体居中、表注紧跟表格下方；客户版结果分析禁放元说明；默认写作技能切换为 `awesome-ai-research-writing` |
 | v6.5 | 2026-04-17 | 强化结果写作规则：同一分析模块默认输出连续段落；正式交付前默认补一轮 `phd-writing` / `scholar-write` 风格润色 |
