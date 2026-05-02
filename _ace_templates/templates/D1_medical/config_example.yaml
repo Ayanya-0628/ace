@@ -1,6 +1,7 @@
 # === D1 医学临床统计 - 项目配置模板 ===
 # 适用：中医证型/体质分布、卡方检验、秩和检验、Logistic回归等
 project_type: D1_medical
+# project_name 用研究主题/客户可见名称，不写内部单号或文件夹编号。
 project_name: "xxx临床数据分析"
 
 data_file: "临床数据.xlsx"

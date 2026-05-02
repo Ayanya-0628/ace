@@ -120,7 +120,9 @@ result = chi_square_test(df, 'Group', '不良反应', {'实验组': '实验组',
 > - 客户未指定方法时，一律使用 Bootstrap
 > - 显著性判断：95% CI 不包含 0 → 间接效应显著
 > - 中介类型：CI不含0 + c'显著 → 部分中介 / CI不含0 + c'不显著 → 完全中介
-> - 不报中介比例（Bootstrap 下无意义），只报间接效应值 + 95% CI
+> - 不报中介比例（Bootstrap 下无意义）；论文/客户版默认报告“效应分解与Bootstrap检验表”
+> - 效应分解表列为 `效应 | Effect | SE | 95%CI`：总效应和直接效应填回归估计的 SE 与 95%CI，间接效应填 Bootstrap SE 与 Bootstrap 95%CI
+> - 表注必须说明：总效应和直接效应为回归估计结果；间接效应基于 Bootstrap 重复抽样；95%CI 为 95% 置信区间
 > - 理论依据：Preacher & Hayes (2008)
 >
 > **补充方法：Baron-Kenny + Sobel（仅客户指定时使用）**

@@ -2,6 +2,7 @@
 # 使用方法：复制本文件到项目目录，修改各字段后运行 pipeline.py
 
 project_type: A1_questionnaire
+# project_name 用研究主题/客户可见名称，不写内部单号或文件夹编号。
 project_name: "xxx问卷分析"
 
 # ── 数据源 ──

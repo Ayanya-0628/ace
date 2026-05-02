@@ -30,11 +30,11 @@
     from spss_questionnaire_sps import generate_questionnaire_sps
 
     config = QuestionnaireConfig(
-        project_id='157',
+        project_id='',  # 内部编号可留空；客户可见文件名不带编号
         project_name='家长式领导',
-        sav_path=os.path.join(BASE_DIR, '交付成果', '157_数据_家长式领导.sav'),
-        spv_path=os.path.join(BASE_DIR, '交付成果', '157_SPV_家长式领导.spv'),
-        sps_path=os.path.join(BASE_DIR, '交付成果', '157_SPS_家长式领导.sps'),
+        sav_path=os.path.join(BASE_DIR, '交付成果', '家长式领导_数据.sav'),
+        spv_path=os.path.join(BASE_DIR, '交付成果', '家长式领导_SPSS分析结果.spv'),
+        sps_path=os.path.join(BASE_DIR, '交付成果', '家长式领导_问卷分析语法.sps'),
         # 量表定义
         scales=[
             ScaleBlock('家长式领导', {
@@ -134,7 +134,6 @@ def generate_questionnaire_sps(cfg: QuestionnaireConfig) -> str:
     # ── 文件头 ──
     sections.append(f"""* ═══════════════════════════════════════════════════════════.
 * {cfg.project_name} — SPSS 分析语法.
-* 项目编号：{cfg.project_id}.
 * 自动生成，可一键运行.
 * ═══════════════════════════════════════════════════════════.
 
@@ -288,13 +287,14 @@ def safe_paths(script_file: str, project_id: str, project_name: str,
     """
     以脚本文件所在目录为锚点，安全构建 SAV/SPV/SPS 路径。
     🔴 铁律：禁止用 os.getcwd() 或裸 os.path.abspath()
+    🔴 客户可见文件名不带内部项目编号；project_id 仅保留为兼容旧调用。
 
     Parameters
     ----------
     script_file : str
         调用方传入 __file__
     project_id : str
-        项目编号（如 '157'）
+        内部项目编号（如 '157'），不进入客户可见文件名
     project_name : str
         项目名关键词（如 '家长式领导'）
     subdir : str
@@ -306,13 +306,13 @@ def safe_paths(script_file: str, project_id: str, project_name: str,
 
     Usage
     -----
-    SAV, SPV, SPS = safe_paths(__file__, '157', '家长式领导')
+    SAV, SPV, SPS = safe_paths(__file__, '', '家长式领导')
     """
     base = os.path.dirname(os.path.abspath(script_file))
     out = os.path.join(base, subdir)
-    sav = os.path.join(out, f'{project_id}_数据_{project_name}.sav')
-    spv = os.path.join(out, f'{project_id}_SPV_{project_name}.spv')
-    sps = os.path.join(out, f'{project_id}_SPS_{project_name}.sps')
+    sav = os.path.join(out, f'{project_name}_数据.sav')
+    spv = os.path.join(out, f'{project_name}_SPSS分析结果.spv')
+    sps = os.path.join(out, f'{project_name}_问卷分析语法.sps')
     return sav, spv, sps
 
 
@@ -323,10 +323,10 @@ def safe_paths(script_file: str, project_id: str, project_name: str,
 if __name__ == '__main__':
     # 以本文件所在目录为锚点（这是唯一推荐的路径构建方式）
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    SAV, SPV, SPS = safe_paths(__file__, '157', '家长式领导')
+    SAV, SPV, SPS = safe_paths(__file__, '', '家长式领导')
 
     config = QuestionnaireConfig(
-        project_id='157',
+        project_id='',  # 内部编号可留空；客户可见文件名不带编号
         project_name='家长式领导',
         sav_path=SAV,
         spv_path=SPV,

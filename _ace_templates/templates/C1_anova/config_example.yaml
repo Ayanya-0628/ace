@@ -1,6 +1,7 @@
 # === C1 方差分析 - 项目配置模板 ===
 # 适用场景：实验组/对照组对比、多因素ANOVA、重复测量等
 project_type: C1_anova
+# project_name 用研究主题/客户可见名称，不写内部单号或文件夹编号。
 project_name: "xxx方差分析"
 
 data_file: "实验数据.xlsx"

@@ -351,15 +351,39 @@ def mediation_paths(table_no, iv, mv, dv,
     # 间接效应
     ci_contains_zero = ci_lo <= 0 <= ci_hi
     if not ci_contains_zero:
-        text += f'间接效应a×b={indirect:.4f}，Bootstrap 95%置信区间为[{ci_lo:.4f}, {ci_hi:.4f}]，区间不包含0，中介效应显著。'
+        text += f'Bootstrap检验结果显示，间接效应a×b={indirect:.4f}，95%CI为[{ci_lo:.4f}, {ci_hi:.4f}]，区间不包含0，中介效应显著。'
         if cp_p < 0.05:
             text += f"同时c'路径系数为{cp_coef:.3f}（P{_p_str(cp_p)}），仍然显著，表明{mv}起部分中介作用。"
         else:
             text += f"c'路径系数为{cp_coef:.3f}（P{_p_str(cp_p)}），不再显著，{mv}起完全中介作用。"
     else:
-        text += f'间接效应为{indirect:.4f}，Bootstrap 95%CI=[{ci_lo:.4f}, {ci_hi:.4f}]，包含0，中介效应不显著。'
+        text += f'Bootstrap检验结果显示，间接效应为{indirect:.4f}，95%CI为[{ci_lo:.4f}, {ci_hi:.4f}]，包含0，中介效应不显著。'
 
     return text
+
+
+def mediation_effect_decomposition_rows(total_effect, total_se, total_ci,
+                                        direct_effect, direct_se, direct_ci,
+                                        indirect_effect, indirect_se, indirect_ci,
+                                        digits=3):
+    """客户版中介效应分解表：总/直接为回归CI，间接为Bootstrap CI。"""
+    fmt = f'{{:.{digits}f}}'
+
+    def ci_text(ci):
+        lo, hi = ci
+        return f'[{fmt.format(lo)}, {fmt.format(hi)}]'
+
+    return [
+        ['总效应 c', fmt.format(total_effect), fmt.format(total_se), ci_text(total_ci)],
+        ["直接效应 c'", fmt.format(direct_effect), fmt.format(direct_se), ci_text(direct_ci)],
+        ['间接效应 ab', fmt.format(indirect_effect), fmt.format(indirect_se), ci_text(indirect_ci)],
+    ]
+
+
+def mediation_effect_decomposition_note(n_boot=5000):
+    """中介效应分解表标准表注。"""
+    return (f'注：总效应和直接效应为回归估计结果；间接效应基于Bootstrap重复抽样{n_boot}次；'
+            '95%CI为95%置信区间。')
 
 
 # ══════════════════════════════════════════════

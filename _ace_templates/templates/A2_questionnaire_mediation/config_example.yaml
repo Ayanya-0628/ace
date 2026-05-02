@@ -1,5 +1,6 @@
 # === A2 问卷+中介/调节效应 - 项目配置模板 ===
 project_type: A2_questionnaire_mediation
+# project_name 用研究主题/客户可见名称，不写内部单号或文件夹编号。
 project_name: "xxx影响研究——中介与调节效应分析"
 
 data_file: "问卷数据.xlsx"

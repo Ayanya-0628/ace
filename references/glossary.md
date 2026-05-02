@@ -57,7 +57,7 @@
 
 | 英文术语 | 中文全称 | 首次写法 | 后续简称 |
 |---------|---------|---------|---------|
-| Bootstrap | 自抽样法 | 自抽样法(Bootstrap) | Bootstrap法 |
+| Bootstrap | Bootstrap重复抽样法 | Bootstrap重复抽样法 | Bootstrap法 |
 | Baron & Kenny | 逐步回归法 | 逐步回归中介检验法(Baron & Kenny) | 逐步回归法 |
 | Sobel | 索贝尔检验 | 索贝尔中介效应检验(Sobel) | Sobel检验 |
 | DID | 双重差分法 | 双重差分法(DID) | DID |
@@ -106,7 +106,7 @@ GLOSSARY = {
     'Pearson':      {'first': '皮尔逊积差相关(Pearson)',            'short': 'Pearson相关'},
     'Spearman':     {'first': '斯皮尔曼等级相关(Spearman)',         'short': 'Spearman相关'},
     'ANOVA':        {'first': '方差分析(ANOVA)',                    'short': '方差分析'},
-    'Bootstrap':    {'first': '自抽样法(Bootstrap)',                 'short': 'Bootstrap法'},
+    'Bootstrap':    {'first': 'Bootstrap重复抽样法',                  'short': 'Bootstrap法'},
     'VIF':          {'first': '方差膨胀因子(VIF)',                   'short': 'VIF'},
     'OLS':          {'first': '普通最小二乘回归(OLS)',               'short': 'OLS回归'},
     # ... 按需扩展

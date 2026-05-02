@@ -1,5 +1,6 @@
 # === B1 截面实证回归分析 - 项目配置模板 ===
 project_type: B1_cross_section
+# project_name 用研究主题/客户可见名称，不写内部单号或文件夹编号。
 project_name: "xxx实证分析"
 
 data_file: "数据.xlsx"

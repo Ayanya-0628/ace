@@ -46,6 +46,8 @@ def bootstrap_mediation(df, iv, mv, dv, controls=None, n_boot=5000, seed=42):
     mc = sm.OLS(df[dv], Xc).fit()
     c_coef = mc.params[iv]
     c_p = mc.pvalues[iv]
+    c_ci = mc.conf_int(alpha=0.05).loc[iv]
+    cp_ci = mbc.conf_int(alpha=0.05).loc[iv]
 
     # Bootstrap
     boot_indirect = []
@@ -62,6 +64,7 @@ def bootstrap_mediation(df, iv, mv, dv, controls=None, n_boot=5000, seed=42):
             pass
 
     indirect = a_coef * b_coef
+    indirect_se = np.std(boot_indirect, ddof=1)
     ci_lo = np.percentile(boot_indirect, 2.5)
     ci_hi = np.percentile(boot_indirect, 97.5)
     # BCA 修正
@@ -76,8 +79,11 @@ def bootstrap_mediation(df, iv, mv, dv, controls=None, n_boot=5000, seed=42):
         'a': a_coef, 'a_p': a_p, 'a_t': ma.tvalues[iv],
         'b': b_coef, 'b_p': b_p, 'b_t': mbc.tvalues[mv],
         'cp': cp_coef, 'cp_p': cp_p, 'cp_t': mbc.tvalues[iv],
-        'c': c_coef, 'c_p': c_p,
-        'indirect': indirect, 'ci_lo': ci_lo, 'ci_hi': ci_hi,
+        'cp_se': mbc.bse[iv], 'cp_ci_lo': cp_ci[0], 'cp_ci_hi': cp_ci[1],
+        'c': c_coef, 'c_p': c_p, 'c_se': mc.bse[iv],
+        'c_ci_lo': c_ci[0], 'c_ci_hi': c_ci[1],
+        'indirect': indirect, 'indirect_se': indirect_se,
+        'ci_lo': ci_lo, 'ci_hi': ci_hi,
         'bca_lo': bca_lo, 'bca_hi': bca_hi,
         'sig': not (ci_lo <= 0 <= ci_hi),
         'partial': cp_p < 0.05,
@@ -180,7 +186,7 @@ def run_pipeline(config_path):
     med_cfgs = [h for h in cfg.get('hypotheses', []) if h.get('type') == 'mediation']
     if med_cfgs:
         rb.add_heading('五、中介效应检验')
-        rb.add_body_text('采用Baron和Kenny逐步回归法结合Bootstrap检验（重复抽样5000次）分析中介效应。')
+        rb.add_body_text('采用逐步回归法与Bootstrap重复抽样法检验中介效应，其中总效应和直接效应采用回归估计，间接效应采用Bootstrap重复抽样5000次估计置信区间。')
         for h in med_cfgs:
             t = rb.next_table_no()
             iv, mv, dv = h['iv'], h['mv'], h['dv']
@@ -188,21 +194,13 @@ def run_pipeline(config_path):
 
             med = bootstrap_mediation(df, iv, mv, dv, controls=ctrl_vars)
 
-            med_rows = [
-                [f'a路径({iv}→{mv})', f'{med["a"]:.3f}', f'{med["a_t"]:.2f}',
-                 f'{med["a_p"]:.4f}' if med["a_p"] >= 0.001 else '<0.001'],
-                [f'b路径({mv}→{dv})', f'{med["b"]:.3f}', f'{med["b_t"]:.2f}',
-                 f'{med["b_p"]:.4f}' if med["b_p"] >= 0.001 else '<0.001'],
-                [f"c'路径({iv}→{dv})", f'{med["cp"]:.3f}', f'{med["cp_t"]:.2f}',
-                 f'{med["cp_p"]:.4f}' if med["cp_p"] >= 0.001 else '<0.001'],
-                ['总效应c', f'{med["c"]:.3f}', '', ''],
-                ['间接效应(a×b)', f'{med["indirect"]:.4f}', '', ''],
-                ['Bootstrap 95%CI', f'[{med["ci_lo"]:.4f}, {med["ci_hi"]:.4f}]', '', ''],
-                ['BCA 95%CI', f'[{med["bca_lo"]:.4f}, {med["bca_hi"]:.4f}]', '', ''],
-            ]
-            rb.add_three_line_table(['路径', '系数', 't', 'P'], med_rows,
-                                    title=f'表{t}  {mv}的中介效应检验（{iv}→{mv}→{dv}）')
-            rb.add_note(f'注：N={N}，Bootstrap重复5000次。')
+            med_rows = mediation_effect_decomposition_rows(
+                med['c'], med['c_se'], (med['c_ci_lo'], med['c_ci_hi']),
+                med['cp'], med['cp_se'], (med['cp_ci_lo'], med['cp_ci_hi']),
+                med['indirect'], med['indirect_se'], (med['ci_lo'], med['ci_hi']))
+            rb.add_three_line_table(['效应', 'Effect', 'SE', '95%CI'], med_rows,
+                                    title=f'表{t}  效应分解与Bootstrap检验（{iv}→{mv}→{dv}）')
+            rb.add_note(mediation_effect_decomposition_note(5000))
 
             rb.add_body_text(mediation_paths(
                 t, iv, mv, dv,

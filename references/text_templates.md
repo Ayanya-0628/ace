@@ -180,6 +180,24 @@ for var, beta, p_val in predictors:
 
 ## 9. 中介效应表
 
+标准表格口径：
+
+| 效应 | Effect | SE | 95%CI |
+|------|--------|----|-------|
+| 总效应 c | 回归系数 | 回归SE | [回归LLCI, 回归ULCI] |
+| 直接效应 c' | 回归系数 | 回归SE | [回归LLCI, 回归ULCI] |
+| 间接效应 ab | a×b | Bootstrap SE | [BootLLCI, BootULCI] |
+
+标准表注：
+
+`注：总效应和直接效应为回归估计结果；间接效应基于Bootstrap重复抽样5000次；95%CI为95%置信区间。`
+
+写作要点：
+
+- 表头默认写 `95%CI`，不要写成整列 `Bootstrap 95%CI`。
+- 总效应和直接效应可以有 95%CI，但它们通常是回归估计置信区间，不是 Bootstrap 置信区间。
+- 客户版/论文版默认将置信区间写成 `[LLCI, ULCI]` 一个括号列，不拆成 `LLCI/ULCI` 两列。
+
 ```python
 text = f'由表{t}可知，'
 # a路径
@@ -197,9 +215,9 @@ else:
 # 间接效应
 if ci_lower > 0 or ci_upper < 0:  # CI不含0
     text += (
-        f'{g("Bootstrap")}检验结果显示，'
+        f'Bootstrap检验结果显示，'
         f'{iv}通过{mv}对{dv}的间接效应为{indirect:.3f}，'
-        f'95%置信区间为[{ci_lower:.3f}, {ci_upper:.3f}]，不包含0，'
+        f'95%CI为[{ci_lower:.3f}, {ci_upper:.3f}]，不包含0，'
         f'表明中介效应显著。'
     )
     if p_c_prime < 0.05:
@@ -208,7 +226,7 @@ if ci_lower > 0 or ci_upper < 0:  # CI不含0
         text += f'直接效应不显著（c\'={c_prime:.3f}，P{_p_str(p_c_prime)}），属于完全中介。'
 else:
     text += (
-        f'{g("Bootstrap")}检验结果显示，间接效应的95%置信区间为'
+        f'Bootstrap检验结果显示，间接效应的95%CI为'
         f'[{ci_lower:.3f}, {ci_upper:.3f}]，包含0，中介效应不成立。'
     )
 ```
